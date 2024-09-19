@@ -82,7 +82,7 @@ public class Catalog {
             }
         }
 
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("Table " + name + " does not exist.");
     }
 
     /**
@@ -97,7 +97,7 @@ public class Catalog {
             }
         }
 
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("Table with id " + String.valueOf(tableId) + " does not exist.");
     }
 
     /**

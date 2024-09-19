@@ -5,7 +5,7 @@ import java.util.*;
  * TupleDesc describes the schema of a tuple.
  */
 public class TupleDesc {
-    
+
     private Type[] types;
     private String[] fields;
 
@@ -80,7 +80,7 @@ public class TupleDesc {
      */
     public String getFieldName(int i) throws NoSuchElementException {
         if (i < 0 || i >= this.numFields()) {
-            throw new NoSuchElementException();
+            throw new NoSuchElementException(String.valueOf(i) + " is not a valid field reference.");
         }
 
         return this.fields[i];
@@ -100,7 +100,7 @@ public class TupleDesc {
             }
         }
 
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("No field matching " + name + ".");
      }
 
     /**
@@ -112,7 +112,7 @@ public class TupleDesc {
      */
     public Type getType(int i) throws NoSuchElementException {
         if (i < 0 || i >= this.numFields()) {
-            throw new NoSuchElementException();
+            throw new NoSuchElementException(String.valueOf(i) + " is not a valid field reference.");
         }
 
         return this.types[i];

@@ -6,7 +6,7 @@ package simpledb;
  * Field objects with the data for each field.
  */
 public class Tuple {
-    
+
     private TupleDesc tupleDesc;
     private Field[] fields;
 
@@ -57,7 +57,7 @@ public class Tuple {
      */
     public void setField(int i, Field f) {
         if (i < 0 || i >= this.tupleDesc.numFields()) {
-            throw new IllegalArgumentException("Field index is invalid.");
+            throw new IllegalArgumentException("Field index " + String.valueOf(i) + " is invalid.");
         }
         
         this.fields[i] = f;
@@ -70,7 +70,7 @@ public class Tuple {
      */
     public Field getField(int i) {
         if (i < 0 || i >= this.tupleDesc.numFields()) {
-            throw new IllegalArgumentException("Field index is invalid.");
+            throw new IllegalArgumentException("Field index " + String.valueOf(i) + " is invalid.");
         }
         
         return this.fields[i];
