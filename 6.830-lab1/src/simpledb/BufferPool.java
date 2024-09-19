@@ -21,12 +21,17 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
+    private int maxNumPages;
+    private HashMap<PageId, Page> pageIdToPage;
+
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
+        this.maxNumPages = numPages;
+        this.pageIdToPage = new HashMap<>();
     }
 
     /**
@@ -44,9 +49,24 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-        return null;
+        Page existingPage = this.pageIdToPage.get(pid);
+        if (existingPage != null) {
+            return existingPage;
+        }
+
+        Catalog globalCatalog =  Database.getCatalog();
+        DbFile dbFile = globalCatalog.getDbFile(pid.getTableId());
+        Page page = dbFile.readPage(pid);
+
+        if (this.pageIdToPage.size() == this.maxNumPages) {
+            // TODO: Include eviction policy.
+            throw new DbException("Buffer pool is full.");
+        } else {
+            this.pageIdToPage.put(pid, page);
+            return page;
+        }
     }
 
     /**
