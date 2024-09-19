@@ -6,6 +6,7 @@ package simpledb;
  * Field objects with the data for each field.
  */
 public class Tuple {
+    
     private TupleDesc tupleDesc;
     private Field[] fields;
 

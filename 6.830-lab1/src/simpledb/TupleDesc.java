@@ -5,6 +5,7 @@ import java.util.*;
  * TupleDesc describes the schema of a tuple.
  */
 public class TupleDesc {
+    
     private Type[] types;
     private String[] fields;
 

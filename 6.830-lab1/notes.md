@@ -5,3 +5,7 @@ A `Tuple` is a collection of `Field` objects, one per field in the tuple. The tu
 # Field
 
 A `Field` is an interface that different data types (e.g., integers, strings) implement.
+
+# Catalog
+
+A `Catalog` consists of a list of the tables and schemas of the tables (represented by `DbFile` objects) that are in the database. Each table corresponds to a `TupleDesc` that allows operators to determine the types and number of fields in a table.

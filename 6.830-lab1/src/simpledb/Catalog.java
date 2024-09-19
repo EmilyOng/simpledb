@@ -15,13 +15,31 @@ import java.util.*;
  */
 
 public class Catalog {
+    private class Table {
+        private DbFile dbFile;
+        private String name;
+        private String pkeyField;
+
+        public Table(DbFile dbFile, String name, String pkeyField) {
+            if (name == null) {
+                throw new IllegalArgumentException("Table name cannot be null.");
+            }
+
+            this.dbFile = dbFile;
+            this.name = name;
+            this.pkeyField = pkeyField;
+        }
+    }
+
+
+    private List<Table> tables;
 
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        this.tables = new ArrayList<>();
     }
 
     /**
@@ -30,15 +48,15 @@ public class Catalog {
      * @param file the contents of the table to add;  file.getId() is the identfier of
      *    this file/tupledesc param for the calls getTupleDesc and getFile
      * @param name the name of the table -- may be an empty string.  May not be null.  If a name
+     *    conflict exists, use the last table to be added as the table for a given name.
      * @param pkeyField the name of the primary key field
-     * conflict exists, use the last table to be added as the table for a given name.
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        this.tables.add(new Table(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
-        addTable(file,name,"");
+        addTable(file, name, "");
     }
 
     /**
@@ -58,8 +76,28 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) {
-        // some code goes here
-        return 0;
+        for (int i = 0; i < this.tables.size(); i++) {
+            if (this.tables.get(i).name.equals(name)) {
+                return this.tables.get(i).dbFile.getId();
+            }
+        }
+
+        throw new NoSuchElementException();
+    }
+
+    /**
+     * Returns the specified table
+     * @param tableId The id of the table, as specified by the DbFile.getId()
+     *     function passed to addTable
+     */
+    private Table getTable(int tableId) throws NoSuchElementException {
+        for (int i = 0; i < this.tables.size(); i++) {
+            if (this.tables.get(i).dbFile.getId() == tableId) {
+                return this.tables.get(i);
+            }
+        }
+
+        throw new NoSuchElementException();
     }
 
     /**
@@ -68,8 +106,7 @@ public class Catalog {
      *     function passed to addTable
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        return this.getTable(tableid).dbFile.getTupleDesc();
     }
 
     /**
@@ -79,28 +116,26 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDbFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        return this.getTable(tableid).dbFile;
     }
 
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        this.tables.clear();
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        return this.getTable(tableid).pkeyField;
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return this.tables.stream()
+            .map(table -> table.dbFile.getId())
+            .iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        return this.getTable(id).name;
     }
     
     /**
