@@ -9,3 +9,7 @@ A `Field` is an interface that different data types (e.g., integers, strings) im
 # Catalog
 
 A `Catalog` consists of a list of the tables and schemas of the tables (represented by `DbFile` objects) that are in the database. Each table corresponds to a `TupleDesc` that allows operators to determine the types and number of fields in a table.
+
+# Buffer Pool
+
+The `BufferPool` is responsible for caching pages in memory that have been recently read from the disk. All operators read and write pages from various files on disk through the buffer pool.

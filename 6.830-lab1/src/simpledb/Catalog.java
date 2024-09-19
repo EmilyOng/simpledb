@@ -32,14 +32,14 @@ public class Catalog {
     }
 
 
-    private List<Table> tables;
+    private HashMap<Integer, Table> tableIdToTable;
 
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        this.tables = new ArrayList<>();
+        this.tableIdToTable = new HashMap<>();
     }
 
     /**
@@ -52,7 +52,7 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        this.tables.add(new Table(file, name, pkeyField));
+        this.tableIdToTable.put(file.getId(), new Table(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
@@ -76,9 +76,9 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) {
-        for (int i = 0; i < this.tables.size(); i++) {
-            if (this.tables.get(i).name.equals(name)) {
-                return this.tables.get(i).dbFile.getId();
+        for (Map.Entry<Integer, Table> entry : this.tableIdToTable.entrySet()) {
+            if (entry.getValue().name.equals(name)) {
+                return entry.getKey();
             }
         }
 
@@ -91,13 +91,11 @@ public class Catalog {
      *     function passed to addTable
      */
     private Table getTable(int tableId) throws NoSuchElementException {
-        for (int i = 0; i < this.tables.size(); i++) {
-            if (this.tables.get(i).dbFile.getId() == tableId) {
-                return this.tables.get(i);
-            }
+        Table table = this.tableIdToTable.get(tableId);
+        if (table == null) {
+            throw new NoSuchElementException("Table with id " + String.valueOf(tableId) + " does not exist.");
         }
-
-        throw new NoSuchElementException("Table with id " + String.valueOf(tableId) + " does not exist.");
+        return table;
     }
 
     /**
@@ -121,7 +119,7 @@ public class Catalog {
 
     /** Delete all tables from the catalog */
     public void clear() {
-        this.tables.clear();
+        this.tableIdToTable.clear();
     }
 
     public String getPrimaryKey(int tableid) {
@@ -129,7 +127,8 @@ public class Catalog {
     }
 
     public Iterator<Integer> tableIdIterator() {
-        return this.tables.stream()
+        return this.tableIdToTable.values()
+            .stream()
             .map(table -> table.dbFile.getId())
             .iterator();
     }
