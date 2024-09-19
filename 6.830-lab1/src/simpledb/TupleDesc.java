@@ -5,6 +5,8 @@ import java.util.*;
  * TupleDesc describes the schema of a tuple.
  */
 public class TupleDesc {
+    private Type[] types;
+    private String[] fields;
 
     /**
      * Merge two TupleDescs into one, with td1.numFields + td2.numFields
@@ -15,8 +17,20 @@ public class TupleDesc {
      * @return the new TupleDesc
      */
     public static TupleDesc combine(TupleDesc td1, TupleDesc td2) {
-        // some code goes here
-        return null;
+        int totalNumFields = td1.numFields() + td2.numFields();
+        Type[] types = new Type[totalNumFields];
+        String[] fields = new String[totalNumFields];
+        
+        for (int i = 0; i < td1.numFields(); i++) {
+            types[i] = td1.types[i];
+            fields[i] = td1.fields[i];
+        }
+        for (int i = 0; i < td2.numFields(); i++) {
+            types[i + td1.numFields()] = td2.types[i];
+            fields[i + td1.numFields()] = td2.fields[i];
+        }
+
+        return new TupleDesc(types, fields);
     }
 
     /**
@@ -28,7 +42,12 @@ public class TupleDesc {
      * @param fieldAr array specifying the names of the fields. Note that names may be null.
      */
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
-        // some code goes here
+        if (typeAr.length == 0) {
+            throw new IllegalArgumentException("Type array must contain at least one entries.");
+        }
+
+        this.types = typeAr.clone();
+        this.fields = fieldAr.clone();
     }
 
     /**
@@ -40,15 +59,15 @@ public class TupleDesc {
      *        this TupleDesc. It must contain at least one entry.
      */
     public TupleDesc(Type[] typeAr) {
-        // some code goes here
+        this.types = typeAr;
+        this.fields = new String[typeAr.length];
     }
 
     /**
      * @return the number of fields in this TupleDesc
      */
     public int numFields() {
-        // some code goes here
-        return 0;
+        return this.types.length;
     }
 
     /**
@@ -59,8 +78,11 @@ public class TupleDesc {
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public String getFieldName(int i) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        if (i < 0 || i >= this.numFields()) {
+            throw new NoSuchElementException();
+        }
+
+        return this.fields[i];
     }
 
     /**
@@ -71,9 +93,14 @@ public class TupleDesc {
      * @throws NoSuchElementException if no field with a matching name is found.
      */
     public int nameToId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
-    }
+        for (int i = 0; i < this.fields.length; i++) {
+            if (this.fields[i] != null && this.fields[i].equals(name)) {
+                return i;
+            }
+        }
+
+        throw new NoSuchElementException();
+     }
 
     /**
      * Gets the type of the ith field of this TupleDesc.
@@ -83,8 +110,11 @@ public class TupleDesc {
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public Type getType(int i) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        if (i < 0 || i >= this.numFields()) {
+            throw new NoSuchElementException();
+        }
+
+        return this.types[i];
     }
 
     /**
@@ -92,8 +122,11 @@ public class TupleDesc {
      * Note that tuples from a given TupleDesc are of a fixed size.
      */
     public int getSize() {
-        // some code goes here
-        return 0;
+        int totalSize = 0;
+        for (int i = 0; i < this.numFields(); i++) {
+            totalSize += this.types[i].getLen();
+        }
+        return totalSize;
     }
 
     /**
@@ -105,8 +138,27 @@ public class TupleDesc {
      * @return true if the object is equal to this TupleDesc.
      */
     public boolean equals(Object o) {
-        // some code goes here
-        return false;
+        if (!(o instanceof TupleDesc)) {
+            return false;
+        }
+
+        TupleDesc otherTupleDesc = (TupleDesc) o;
+
+        if (this.getSize() != otherTupleDesc.getSize()) {
+            return false;
+        }
+
+        if (this.numFields() != otherTupleDesc.numFields()) {
+            return false;
+        }
+
+        for (int i = 0; i < this.numFields(); i++) {
+            if (!this.types[i].equals(otherTupleDesc.types[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public int hashCode() {

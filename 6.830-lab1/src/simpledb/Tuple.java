@@ -6,6 +6,8 @@ package simpledb;
  * Field objects with the data for each field.
  */
 public class Tuple {
+    private TupleDesc tupleDesc;
+    private Field[] fields;
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -14,15 +16,19 @@ public class Tuple {
      * instance with at least one field.
      */
     public Tuple(TupleDesc td) {
-        // some code goes here
+        if (td.numFields() == 0) {
+            throw new IllegalArgumentException("Tuple descriptor must have at least one field.");
+        }
+
+        this.tupleDesc = td;
+        this.fields = new Field[td.numFields()];
     }
 
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return this.tupleDesc;
     }
 
     /**
@@ -49,7 +55,11 @@ public class Tuple {
      * @param f new value for the field.
      */
     public void setField(int i, Field f) {
-        // some code goes here
+        if (i < 0 || i >= this.tupleDesc.numFields()) {
+            throw new IllegalArgumentException("Field index is invalid.");
+        }
+        
+        this.fields[i] = f;
     }
 
     /**
@@ -58,8 +68,11 @@ public class Tuple {
      * @param i field index to return. Must be a valid index.
      */
     public Field getField(int i) {
-        // some code goes here
-        return null;
+        if (i < 0 || i >= this.tupleDesc.numFields()) {
+            throw new IllegalArgumentException("Field index is invalid.");
+        }
+        
+        return this.fields[i];
     }
 
     /**
