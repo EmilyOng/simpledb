@@ -6,6 +6,9 @@ import java.util.*;
  */
 public class Filter extends AbstractDbIterator {
 
+    private Predicate predicate;
+    private DbIterator child;
+
     /**
      * Constructor accepts a predicate to apply and a child
      * operator to read tuples to filter from.

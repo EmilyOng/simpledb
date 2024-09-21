@@ -6,20 +6,25 @@ import java.util.NoSuchElementException;
 <code>hasNext</code>. Subclasses only need to implement <code>open</code> and
 <code>readNext</code>. */
 public abstract class AbstractDbIterator implements DbIterator {
+
+    private Tuple next = null;
+
     public boolean hasNext() throws DbException, TransactionAbortedException {
-        if (next == null) next = readNext();
-        return next != null;
+        if (this.next == null) this.next = readNext();
+        return this.next != null;
     }
 
     public Tuple next() throws
             DbException, TransactionAbortedException, NoSuchElementException {
-        if (next == null) {
-            next = readNext();
-            if (next == null) throw new NoSuchElementException();
+        if (this.next == null) {
+            this.next = readNext();
+            if (this.next == null) {
+                throw new NoSuchElementException();
+            }
         }
 
-        Tuple result = next;
-        next = null;
+        Tuple result = this.next;
+        this.next = null;
         return result;
     }
 
@@ -34,8 +39,6 @@ public abstract class AbstractDbIterator implements DbIterator {
     consistent. */
     public void close() {
         // Ensures that a future call to next() will fail
-        next = null;
+        this.next = null;
     }
-
-    private Tuple next = null;
 }

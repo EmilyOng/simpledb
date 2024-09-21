@@ -4,9 +4,19 @@ package simpledb;
  */
 public class Predicate {
 
+    private int fieldNum;
+    private Op operation;
+    private Field operand;
+
     /** Constants used for return codes in Field.compare */
     public enum Op {
-        EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, NOT_EQUALS;
+        EQUALS,
+        GREATER_THAN,
+        LESS_THAN,
+        LESS_THAN_OR_EQ,
+        GREATER_THAN_OR_EQ,
+        LIKE,
+        NOT_EQUALS;
 
         /**
          * Interface to access operations by a string containing an integer
@@ -37,7 +47,9 @@ public class Predicate {
      * @param operand field value to compare passed in tuples to
      */
     public Predicate(int field, Op op, Field operand) {
-        // some code goes here
+        this.fieldNum = field;
+        this.operation = op;
+        this.operand = operand;
     }
 
     /**
@@ -50,8 +62,7 @@ public class Predicate {
      * @return true if the comparison is true, false otherwise.
      */
     public boolean filter(Tuple t) {
-        // some code goes here
-        return false;
+        return t.getField(this.fieldNum).compare(this.operation, this.operand);
     }
 
     /**
@@ -59,7 +70,10 @@ public class Predicate {
      * "f = field_id op = op_string operand = operand_string
      */
     public String toString() {
-        // some code goes here
-        return "";
+        return String.valueOf(this.fieldNum) +
+            " " +
+            this.operation.toString() +
+            " " +
+            this.operand.toString();
     }
 }
