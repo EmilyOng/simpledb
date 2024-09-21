@@ -53,7 +53,7 @@ public class HeapFile implements DbFile {
             }
 
             // Advance to the next page.
-            while (this.heapPage.getId().pageno() < this.heapFile.numPages()) {
+            while (this.heapPage.getId().pageno() + 1 < this.heapFile.numPages()) {
                 int nextPageNum = this.heapPage.pid.pageno() + 1;
                 this.heapPage = (HeapPage) Database.getBufferPool()
                     .getPage(
@@ -94,12 +94,6 @@ public class HeapFile implements DbFile {
          * @throws DbException When rewind is unsupported.
          */
         public void rewind() throws DbException, TransactionAbortedException {
-            this.heapPage = (HeapPage) Database.getBufferPool()
-                .getPage(
-                    transactionId,
-                    new HeapPageId(heapFile.getId(), 0),
-                    Permissions.READ_ONLY
-                );
             this.iterator = this.heapPage.iterator();
         }
 
@@ -171,7 +165,7 @@ public class HeapFile implements DbFile {
             fileInputStream.read(pageData);
             fileInputStream.close();
 
-            return new HeapPage(new HeapPageId(pid.getTableId(), pid.pageno()), pageData);
+            return new HeapPage(new HeapPageId(this.getId(), pid.pageno()), pageData);
         } catch (Exception exception) {
             throw new IllegalArgumentException("Page does not exist in the file.");
         }
