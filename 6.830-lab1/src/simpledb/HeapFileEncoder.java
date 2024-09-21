@@ -5,10 +5,9 @@ import java.util.ArrayList;
 
 /**
  * HeapFileEncoder reads a comma delimited text file or accepts
- * an array of tuples and converts it to
- * pages of binary data in the appropriate format for simpledb heap pages
- * Pages are padded out to a specified length, and written consecutive in a
- * data file.
+ * an array of tuples and converts it to pages of binary data in the
+ * appropriate format for simpledb heap pages. Pages are padded out
+ * to a specified length, and written consecutive in a data file.
  */
 
 public class HeapFileEncoder {
@@ -53,11 +52,11 @@ public class HeapFileEncoder {
 
       public static void convert(File inFile, File outFile, int npagebytes,
                  int numFields) throws IOException {
-      Type[] ts = new Type[numFields];
-      for (int i = 0; i < ts.length; i++) {
-          ts[i] = Type.INT_TYPE;
-      }
-      convert(inFile,outFile,npagebytes,numFields,ts);
+        Type[] ts = new Type[numFields];
+        for (int i = 0; i < ts.length; i++) {
+            ts[i] = Type.INT_TYPE;
+        }
+        convert(inFile, outFile, npagebytes, numFields, ts);
       }
 
    /** Convert the specified input text file into a binary
@@ -195,7 +194,7 @@ public class HeapFileEncoder {
             
             // pad the rest of the page with zeroes
             
-            for (i=0; i<(npagebytes - (recordcount * nrecbytes + nheaderbytes)); i++)
+            for (i = 0; i < (npagebytes - (recordcount * nrecbytes + nheaderbytes)); i++)
                 pageStream.writeByte(0);
             
             // write header and body to file

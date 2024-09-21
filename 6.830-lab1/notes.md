@@ -13,3 +13,9 @@ A `Catalog` consists of a list of the tables and schemas of the tables (represen
 # Buffer Pool
 
 The `BufferPool` is responsible for caching pages in memory that have been recently read from the disk. All operators read and write pages from various files on disk through the buffer pool.
+
+# Heap File
+
+A `HeapFile` object is arranged into a set of pages, each of which consists of a fixed number of bytes for storing tuples, including a header.
+- Each table in the database corresponds to a single `HeapFile.
+- Each page in a `HeapFile` is arranged as a set of slots, each of which can hold a single tuple (*tuples for a given table in SimpleDB are assumed to be of the same size*), and a header (consisting of a bitmap with one bit per tuple slot).

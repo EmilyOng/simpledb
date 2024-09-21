@@ -1,5 +1,6 @@
 package simpledb;
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * TupleDesc describes the schema of a tuple.
@@ -175,7 +176,8 @@ public class TupleDesc {
      * @return String describing this descriptor.
      */
     public String toString() {
-        // some code goes here
-        return "";
+        return IntStream.range(0, this.numFields())
+            .mapToObj(idx -> this.types[idx].toString() + "(" + this.fields[idx] + ")")
+            .reduce("", (result, field) -> result + field);
     }
 }

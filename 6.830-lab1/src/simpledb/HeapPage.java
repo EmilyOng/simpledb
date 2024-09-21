@@ -1,6 +1,8 @@
 package simpledb;
 
 import java.util.*;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.io.*;
 
 /**
@@ -39,20 +41,22 @@ public class HeapPage implements Page {
     public HeapPage(HeapPageId id, byte[] data) throws IOException {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
-        this.numSlots = getNumTuples();
+        this.numSlots = this.getNumTuples();
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // allocate and read the header slots of this page
-        header = new byte[getHeaderSize()];
-        for (int i=0; i<header.length; i++)
-            header[i] = dis.readByte();
+        this.header = new byte[this.getHeaderSize()];
+        for (int i = 0; i < this.header.length; i++) {
+            this.header[i] = dis.readByte();
+        }
 
         try{
             // allocate and read the actual records of this page
-            tuples = new Tuple[numSlots];
-            for (int i=0; i<tuples.length; i++)
-                tuples[i] = readNextTuple(dis,i);
-        }catch(NoSuchElementException e){
+            this.tuples = new Tuple[numSlots];
+            for (int i = 0; i < this.tuples.length; i++) {
+                this.tuples[i] = readNextTuple(dis, i);
+            }
+        } catch(NoSuchElementException e){
             e.printStackTrace();
         }
         dis.close();
@@ -63,20 +67,16 @@ public class HeapPage implements Page {
     /** Retrieve the number of tuples on this page.
         @return the number of tuples on this page
     */
-    private int getNumTuples() {        
-        // some code goes here
-        return 0;
-
+    private int getNumTuples() {
+        return Math.floorDiv(BufferPool.PAGE_SIZE * Byte.SIZE, this.td.getSize() * Byte.SIZE + 1);
     }
 
     /**
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
-    private int getHeaderSize() {        
-        
-        // some code goes here
-        return 0;
+    private int getHeaderSize() {
+       return (int) Math.ceil(((double) this.getNumTuples()) / Byte.SIZE);
                  
     }
     
@@ -84,7 +84,7 @@ public class HeapPage implements Page {
         -- used by recovery */
     public HeapPage getBeforeImage(){
         try {
-            return new HeapPage(pid,oldData);
+            return new HeapPage(this.pid, this.oldData);
         } catch (IOException e) {
             e.printStackTrace();
             //should never happen -- we parsed it OK before!
@@ -94,15 +94,14 @@ public class HeapPage implements Page {
     }
     
     public void setBeforeImage() {
-        oldData = getPageData().clone();
+        this.oldData = this.getPageData().clone();
     }
 
     /**
      * @return the PageId associated with this page.
      */
     public HeapPageId getId() {
-    // some code goes here
-    throw new UnsupportedOperationException("implement this");
+        return this.pid;
     }
 
     /**
@@ -111,8 +110,8 @@ public class HeapPage implements Page {
     private Tuple readNextTuple(DataInputStream dis, int slotId) throws NoSuchElementException {
         // if associated bit is not set, read forward to the next tuple, and
         // return null.
-        if (!getSlot(slotId)) {
-            for (int i=0; i<td.getSize(); i++) {
+        if (!this.getSlot(slotId)) {
+            for (int i = 0; i < this.td.getSize(); i++) {
                 try {
                     dis.readByte();
                 } catch (IOException e) {
@@ -123,12 +122,12 @@ public class HeapPage implements Page {
         }
 
         // read fields in the tuple
-        Tuple t = new Tuple(td);
-        RecordId rid = new RecordId(pid, slotId);
+        Tuple t = new Tuple(this.td);
+        RecordId rid = new RecordId(this.pid, slotId);
         t.setRecordId(rid);
         try {
-            for (int j=0; j<td.numFields(); j++) {
-                Field f = td.getType(j).parse(dis);
+            for (int j = 0; j < this.td.numFields(); j++) {
+                Field f = this.td.getType(j).parse(dis);
                 t.setField(j, f);
             }
         } catch (java.text.ParseException e) {
@@ -156,9 +155,9 @@ public class HeapPage implements Page {
         DataOutputStream dos = new DataOutputStream(baos);
 
         // create the header of the page
-        for (int i=0; i<header.length; i++) {
+        for (int i = 0; i < this.header.length; i++) {
             try {
-                dos.writeByte(header[i]);
+                dos.writeByte(this.header[i]);
             } catch (IOException e) {
                 // this really shouldn't happen
                 e.printStackTrace();
@@ -166,11 +165,11 @@ public class HeapPage implements Page {
         }
 
         // create the tuples
-        for (int i=0; i<tuples.length; i++) {
+        for (int i = 0; i < this.tuples.length; i++) {
 
             // empty slot
-            if (!getSlot(i)) {
-                for (int j=0; j<td.getSize(); j++) {
+            if (!this.getSlot(i)) {
+                for (int j = 0; j < this.td.getSize(); j++) {
                     try {
                         dos.writeByte(0);
                     } catch (IOException e) {
@@ -182,8 +181,8 @@ public class HeapPage implements Page {
             }
 
             // non-empty slot
-            for (int j=0; j<td.numFields(); j++) {
-                Field f = tuples[i].getField(j);
+            for (int j = 0; j < this.td.numFields(); j++) {
+                Field f = this.tuples[i].getField(j);
                 try {
                     f.serialize(dos);
                 
@@ -194,7 +193,7 @@ public class HeapPage implements Page {
         }
 
         // padding
-        int zerolen = BufferPool.PAGE_SIZE - (header.length + td.getSize() * tuples.length); //- numSlots * td.getSize();
+        int zerolen = BufferPool.PAGE_SIZE - (this.header.length + this.td.getSize() * this.tuples.length); //- numSlots * td.getSize();
         byte[] zeroes = new byte[zerolen];
         try {
             dos.write(zeroes, 0, zerolen);
@@ -256,7 +255,7 @@ public class HeapPage implements Page {
      */
     public void markDirty(boolean dirty, TransactionId tid) {
         // some code goes here
-	// not necessary for lab1
+	    // not necessary for lab1
     }
 
     /**
@@ -264,7 +263,7 @@ public class HeapPage implements Page {
      */
     public TransactionId isDirty() {
         // some code goes here
-	// Not necessary for lab1
+	    // Not necessary for lab1
         return null;
     }
 
@@ -272,16 +271,18 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        // some code goes here
-        return 0;
+        return (int) IntStream.range(0, this.numSlots)
+            .filter(idx -> !this.getSlot(idx))
+            .count();
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean getSlot(int i) {
-        // some code goes here
-        return false;
+        byte slotGroup = this.header[i / 8];
+        int slotGroupIdx = i % 8;
+        return (slotGroup & (1 << slotGroupIdx)) != 0;
     }
 
     /**
@@ -297,8 +298,10 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        // some code goes here
-        return null;
+        return IntStream.range(0, this.tuples.length)
+            .filter(idx -> this.getSlot(idx))
+            .mapToObj(idx -> this.tuples[idx])
+            .iterator();
     }
 
 }
