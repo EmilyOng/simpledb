@@ -6,6 +6,12 @@ import java.util.*;
  */
 public class Join extends AbstractDbIterator {
 
+    private JoinPredicate predicate;
+    private DbIterator leftRelationDbIterator;
+    private DbIterator rightRelationDbIterator;
+
+    private Tuple leftTuple;
+
     /**
      * Constructor.  Accepts to children to join and the predicate
      * to join them on
@@ -15,28 +21,35 @@ public class Join extends AbstractDbIterator {
      * @param child2 Iterator for the right(inner) relation to join
      */
     public Join(JoinPredicate p, DbIterator child1, DbIterator child2) {
-        // some code goes here
+        this.predicate = p;
+        this.leftRelationDbIterator = child1;
+        this.rightRelationDbIterator = child2;
     }
 
     /**
      * @see simpledb.TupleDesc#combine(TupleDesc, TupleDesc) for possible implementation logic.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return TupleDesc.combine(
+            this.leftRelationDbIterator.getTupleDesc(),
+            this.rightRelationDbIterator.getTupleDesc()
+        );
     }
 
     public void open()
         throws DbException, NoSuchElementException, TransactionAbortedException {
-        // some code goes here
+        this.leftRelationDbIterator.open();
+        this.rightRelationDbIterator.open();
     }
 
     public void close() {
-        // some code goes here
+        this.leftRelationDbIterator.close();
+        this.rightRelationDbIterator.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.leftRelationDbIterator.rewind();
+        this.rightRelationDbIterator.rewind();
     }
 
     /**
@@ -59,7 +72,25 @@ public class Join extends AbstractDbIterator {
      * @see JoinPredicate#filter
      */
     protected Tuple readNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if (this.leftTuple == null) {
+            if (this.leftRelationDbIterator.hasNext()) {
+                this.leftTuple = this.leftRelationDbIterator.next();
+            } else {
+                return null;
+            }
+
+            this.rightRelationDbIterator.rewind();
+        }
+
+        while (this.rightRelationDbIterator.hasNext()) {
+            Tuple rightTuple = this.rightRelationDbIterator.next();
+            if (!this.predicate.filter(this.leftTuple, rightTuple)) {
+                continue;
+            }
+            return Tuple.combine(this.leftTuple, rightTuple);
+        }
+
+        this.leftTuple = null;
+        return this.readNext();
     }
 }

@@ -11,6 +11,29 @@ public class Tuple {
     private Field[] fields;
 
     /**
+     * Merge two Tuples into one, with t1.getTupleDesc().numFields +
+     * t2.getTupleDesc().numFields fields, with the first t1.getTupleDesc().numFields
+     * coming from t1 and the remaining from t2.
+     * @param t1 The Tuple with the first fields of the new Tuple
+     * @param t2 The Tuple with the last fields of the Tuple
+     * @return the new Tuple
+     */
+    public static Tuple combine(Tuple t1, Tuple t2) {
+        TupleDesc td1 = t1.getTupleDesc();
+        TupleDesc td2 = t2.getTupleDesc();
+
+        Tuple combinedTuple = new Tuple(TupleDesc.combine(td1, td2));
+        for (int i = 0; i < td1.numFields(); i++) {
+            combinedTuple.setField(i, t1.getField(i));
+        }
+        for (int i = 0; i < td2.numFields(); i++) {
+            combinedTuple.setField(i + td1.numFields(), t2.getField(i));
+        }
+
+        return combinedTuple;
+    }
+
+    /**
      * Create a new tuple with the specified schema (type).
      *
      * @param td the schema of this tuple. It must be a valid TupleDesc
