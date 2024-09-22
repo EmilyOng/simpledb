@@ -9,6 +9,7 @@ public class Tuple {
 
     private TupleDesc tupleDesc;
     private Field[] fields;
+    private RecordId recordId;
 
     /**
      * Merge two Tuples into one, with t1.getTupleDesc().numFields +
@@ -60,8 +61,7 @@ public class Tuple {
      *   disk. May be null.
      */
     public RecordId getRecordId() {
-        // some code goes here
-        return null;
+        return this.recordId;
     }
 
     /**
@@ -69,7 +69,7 @@ public class Tuple {
      * @param rid the new RecordId for this tuple.
      */
     public void setRecordId(RecordId rid) {
-        // some code goes here
+        this.recordId = rid;
     }
 
     /**

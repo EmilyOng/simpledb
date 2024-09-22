@@ -2,7 +2,6 @@ package simpledb;
 
 import java.util.*;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import java.io.*;
 
 /**
@@ -14,13 +13,16 @@ import java.io.*;
  */
 public class HeapPage implements Page {
 
-    HeapPageId pid;
-    TupleDesc td;
-    byte header[];
-    Tuple tuples[];
-    int numSlots;
+    private HeapPageId pid;
+    private TupleDesc td;
+    private byte header[];
+    private Tuple tuples[];
+    private int numSlots;
 
-    byte[] oldData;
+    private TransactionId dirtiedTransactionId;
+    private boolean isDirty;
+
+    private byte[] oldData;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -233,20 +235,45 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        RecordId recordId = t.getRecordId();
+
+        if (!this.pid.equals(recordId.getPageId())) {
+            // The tuple is not in this page.
+            throw new DbException("The tuple " + t.toString() + " does not reside in the page " + this.pid.toString() + ".");
+        }
+
+        if (!this.getSlot(recordId.tupleno())) {
+            throw new DbException("The tuple slot for " + t.toString() + " is already empty.");
+        }
+
+        this.tuples[recordId.tupleno()] = null;
+        this.setSlot(recordId.tupleno(), false);
     }
 
     /**
-     * Adds the specified tuple to the page;  the tuple should be updated to reflect
-     *  that it is now stored on this page.
+     * Adds the specified tuple to the page; the tuple should be updated to reflect
+     * that it is now stored on this page.
      * @throws DbException if the page is full (no empty slots) or tupledesc
      *         is mismatch.
      * @param t The tuple to add.
      */
     public void addTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        // Checks whether the tuple descriptors match.
+        if (!this.td.equals(t.getTupleDesc())) {
+            throw new DbException("Tuple descriptors do not match for " + t.toString());
+        }
+
+        // Locate an empty slot
+        for (int i = 0; i < this.numSlots; i++) {
+            if (!this.getSlot(i)) {
+                this.tuples[i] = t;
+                this.setSlot(i, true);
+                t.setRecordId(new RecordId(this.pid, i));
+                return;
+            }
+        }
+
+        throw new DbException("The page is full and has no empty slots.");
     }
 
     /**
@@ -254,17 +281,21 @@ public class HeapPage implements Page {
      * that did the dirtying
      */
     public void markDirty(boolean dirty, TransactionId tid) {
-        // some code goes here
-	    // not necessary for lab1
+        this.isDirty = dirty;
+
+        if (dirty) {
+            this.dirtiedTransactionId = tid;
+        }
     }
 
     /**
      * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
      */
     public TransactionId isDirty() {
-        // some code goes here
-	    // Not necessary for lab1
-        return null;
+        if (!this.isDirty) {
+            return null;
+        }
+        return this.dirtiedTransactionId;
     }
 
     /**
@@ -289,8 +320,12 @@ public class HeapPage implements Page {
      * Abstraction to fill or clear a slot on this page.
      */
     private void setSlot(int i, boolean value) {
-        // some code goes here
-        // not necessary for lab1
+        int slotGroupIdx = i % 8;
+        if (value) {
+            this.header[i / 8] |= (1 << slotGroupIdx);
+        } else {
+            this.header[i / 8] &= (~(1 << slotGroupIdx));
+        }
     }
 
     /**
