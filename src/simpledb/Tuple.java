@@ -109,7 +109,14 @@ public class Tuple {
      * where \t is any whitespace, except newline, and \n is a newline
      */
     public String toString() {
-        // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        String tupleString = "";
+        for (int i = 0; i < this.fields.length; i++) {
+            tupleString += this.fields[i].toString();
+            if (i + 1 < this.fields.length) {
+                tupleString += "\t";
+            }
+        }
+        tupleString += "\n";
+        return tupleString;
     }
 }

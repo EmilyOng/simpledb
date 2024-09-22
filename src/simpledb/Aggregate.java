@@ -9,6 +9,14 @@ import java.util.*;
  */
 public class Aggregate extends AbstractDbIterator {
 
+    private DbIterator childIterator;
+    private int aggregateField;
+    private int groupField;
+    private Aggregator.Op aggregationOperator;
+
+    private Aggregator aggregator;
+    private DbIterator aggregatorIterator;
+
     /**
      * Constructor.  
      *
@@ -22,7 +30,36 @@ public class Aggregate extends AbstractDbIterator {
      * @param aop The aggregation operator to use
      */
     public Aggregate(DbIterator child, int afield, int gfield, Aggregator.Op aop) {
-        // some code goes here
+        this.childIterator = child;
+        this.aggregateField = afield;
+        this.groupField = gfield;
+        this.aggregationOperator = aop;
+
+        TupleDesc tupleDesc = this.childIterator.getTupleDesc();
+        switch (tupleDesc.getType(this.aggregateField)) {
+            case INT_TYPE:
+                this.aggregator = new IntAggregator(
+                    this.groupField,
+                    this.groupField == Aggregator.NO_GROUPING
+                        ? null
+                        : tupleDesc.getType(this.groupField),
+                    this.aggregateField,
+                    this.aggregationOperator
+                );
+                break;
+            case STRING_TYPE:
+                this.aggregator = new StringAggregator(
+                    this.groupField,
+                    this.groupField == Aggregator.NO_GROUPING
+                        ? null
+                        : tupleDesc.getType(this.groupField),
+                    this.aggregateField,
+                    this.aggregationOperator
+                );
+                break;
+            default:
+                break;
+        }
     }
 
     public static String aggName(Aggregator.Op aop) {
@@ -43,7 +80,12 @@ public class Aggregate extends AbstractDbIterator {
 
     public void open()
         throws NoSuchElementException, DbException, TransactionAbortedException {
-        // some code goes here
+        this.childIterator.open();
+        while (this.childIterator.hasNext()) {
+            this.aggregator.merge(this.childIterator.next());
+        }
+        this.aggregatorIterator = this.aggregator.iterator();
+        this.aggregatorIterator.open();
     }
 
     /**
@@ -55,12 +97,19 @@ public class Aggregate extends AbstractDbIterator {
      * Should return null if there are no more tuples.
      */
     protected Tuple readNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if (this.aggregatorIterator.hasNext()) {
+            return this.aggregatorIterator.next();
+        } else {
+            return null;
+        }
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.aggregatorIterator.rewind();
+    }
+
+    private String getAggregationFieldName() {
+        return Aggregate.aggName(this.aggregationOperator) + " " + "(" + this.aggregateField + ")";
     }
 
     /**
@@ -75,11 +124,35 @@ public class Aggregate extends AbstractDbIterator {
      * of the child iterator. 
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        TupleDesc tupleDesc = this.childIterator.getTupleDesc();
+
+        if (this.groupField == Aggregator.NO_GROUPING) {
+            return new TupleDesc(
+                new Type[]{
+                    tupleDesc.getType(this.groupField),
+                    tupleDesc.getType(this.aggregateField)
+                },
+                new String[]{
+                    tupleDesc.getFieldName(this.groupField),
+                    this.getAggregationFieldName()
+                }
+            );
+        } else {
+            return new TupleDesc(
+                new Type[]{
+                    tupleDesc.getType(this.groupField),
+                    tupleDesc.getType(this.aggregateField)
+                },
+                new String[]{
+                    tupleDesc.getFieldName(this.groupField),
+                    this.getAggregationFieldName()
+                }
+            );
+        }
     }
 
     public void close() {
-        // some code goes here
+        this.aggregatorIterator.close();
+        this.childIterator.close();
     }
 }

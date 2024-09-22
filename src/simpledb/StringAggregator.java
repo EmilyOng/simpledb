@@ -1,9 +1,88 @@
 package simpledb;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
 public class StringAggregator implements Aggregator {
+
+    private class StringAggregatorIterator implements DbIterator {
+        private StringAggregator stringAggregator;
+        private Iterator<Entry<Field, Integer>> iterator;
+
+        public StringAggregatorIterator(StringAggregator stringAggregator) {
+            this.stringAggregator = stringAggregator;
+        }
+
+        public void open() throws DbException, TransactionAbortedException {
+            this.iterator = this.stringAggregator.aggregatedCount.entrySet().iterator();
+        }
+
+        public boolean hasNext() throws DbException, TransactionAbortedException {
+            if (this.iterator == null) {
+                return false;
+            }
+
+            return this.iterator.hasNext();
+        }
+
+        public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+            if (this.iterator == null) {
+                throw new NoSuchElementException("next() is unsupported on an uninitialized iterator.");
+            }
+
+            Entry<Field, Integer> entry = this.iterator.next();
+            Field groupByField = entry.getKey();
+            int count = entry.getValue();
+
+            if (groupByField == null) {
+                Tuple tuple = new Tuple(
+                    new TupleDesc(new Type[]{Type.INT_TYPE})
+                );
+                tuple.setField(0, new IntField(count));
+
+                return tuple;
+            } else {
+                Tuple tuple = new Tuple(
+                    new TupleDesc(new Type[]{this.stringAggregator.groupByType, Type.INT_TYPE})
+                );
+                tuple.setField(0, groupByField);
+                tuple.setField(1, new IntField(count));
+
+                return tuple;
+            }
+        }
+
+        public void rewind() throws DbException, TransactionAbortedException {
+            this.iterator = this.stringAggregator.aggregatedCount.entrySet().iterator();
+        }
+
+        public TupleDesc getTupleDesc() {
+            if (this.stringAggregator.groupByField == Aggregator.NO_GROUPING) {
+                return new TupleDesc(new Type[]{Type.INT_TYPE});
+            } else {
+                return new TupleDesc(new Type[]{
+                    this.stringAggregator.groupByType,
+                    Type.INT_TYPE
+                });
+            }
+        }
+
+        public void close() {
+            this.iterator = null;
+        }
+    }
+
+    private int groupByField;
+    private Type groupByType;
+    private int aggregateField;
+    private Op aggregationOperator;
+
+    private HashMap<Field, Integer> aggregatedCount;
 
     /**
      * Aggregate constructor
@@ -15,7 +94,12 @@ public class StringAggregator implements Aggregator {
      */
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // some code goes here
+        this.groupByField = gbfield;
+        this.groupByType = gbfieldtype;
+        this.aggregateField = afield;
+        this.aggregationOperator = what;
+
+        this.aggregatedCount = new HashMap<>();
     }
 
     /**
@@ -23,7 +107,14 @@ public class StringAggregator implements Aggregator {
      * @param tup the Tuple containing an aggregate field and a group-by field
      */
     public void merge(Tuple tup) {
-        // some code goes here
+        Field groupByField = this.groupByField == Aggregator.NO_GROUPING
+            ? null
+            : tup.getField(this.groupByField);
+        
+        this.aggregatedCount.put(
+            groupByField,
+            this.aggregatedCount.getOrDefault(groupByField, 0) + 1
+        );
     }
 
     /**
@@ -35,8 +126,7 @@ public class StringAggregator implements Aggregator {
      *   aggregate specified in the constructor.
      */
     public DbIterator iterator() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement me");
+        return new StringAggregatorIterator(this);
     }
 
 }
