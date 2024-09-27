@@ -6,6 +6,13 @@ package simpledb;
  */
 public class Delete extends AbstractDbIterator {
 
+    private TransactionId transactionId;
+    private DbIterator childDbIterator;
+
+    private boolean alreadyDeleted;
+
+    private static final TupleDesc TUPLE_DESCRIPTOR = new TupleDesc(new Type[]{Type.INT_TYPE});
+
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -13,24 +20,26 @@ public class Delete extends AbstractDbIterator {
      * @param child The child operator from which to read tuples for deletion
      */
     public Delete(TransactionId t, DbIterator child) {
-        // some code goes here
+        this.transactionId = t;
+        this.childDbIterator = child;
+
+        this.alreadyDeleted = false;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return Delete.TUPLE_DESCRIPTOR;
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.childDbIterator.open();
     }
 
     public void close() {
-        // some code goes here
+        this.childDbIterator.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.childDbIterator.rewind();
     }
 
     /**
@@ -42,7 +51,24 @@ public class Delete extends AbstractDbIterator {
      * @see BufferPool#deleteTuple
      */
     protected Tuple readNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if (this.alreadyDeleted) {
+            return null;
+        }
+
+        int numDeletedRecords = 0;
+
+        while (this.childDbIterator.hasNext()) {
+            Tuple deleteableTuple = this.childDbIterator.next();
+
+            Database.getBufferPool().deleteTuple(this.transactionId, deleteableTuple);
+            numDeletedRecords++;
+        }
+
+        Tuple result = new Tuple(this.getTupleDesc());
+        result.setField(0, new IntField(numDeletedRecords));
+
+        this.alreadyDeleted = true;
+
+        return result;
     }
 }

@@ -13,6 +13,8 @@ public class Insert extends AbstractDbIterator {
 
     private boolean alreadyInserted;
 
+    private static final TupleDesc TUPLE_DESCRIPTOR = new TupleDesc(new Type[]{Type.INT_TYPE});
+
     /**
      * Constructor.
      * @param t The transaction running the insert.
@@ -37,7 +39,7 @@ public class Insert extends AbstractDbIterator {
     }
 
     public TupleDesc getTupleDesc() {
-        return new TupleDesc(new Type[]{Type.INT_TYPE});
+        return Insert.TUPLE_DESCRIPTOR;
     }
 
     public void open() throws DbException, TransactionAbortedException {
@@ -84,7 +86,7 @@ public class Insert extends AbstractDbIterator {
             }
         }
 
-        Tuple result = new Tuple(new TupleDesc(new Type[]{Type.INT_TYPE}));
+        Tuple result = new Tuple(this.getTupleDesc());
         result.setField(0, new IntField(numInsertedRecords));
 
         this.alreadyInserted = true;
