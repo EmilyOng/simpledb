@@ -324,7 +324,7 @@ public class HeapPage implements Page {
         if (value) {
             this.header[i / 8] |= (1 << slotGroupIdx);
         } else {
-            this.header[i / 8] &= (~(1 << slotGroupIdx));
+            this.header[i / 8] &= ~(1 << slotGroupIdx);
         }
     }
 

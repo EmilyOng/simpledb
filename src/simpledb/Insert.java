@@ -1,11 +1,17 @@
 package simpledb;
-import java.util.*;
+import java.io.IOException;
 
 /**
  * Inserts tuples read from the child operator into
  * the tableid specified in the constructor
  */
 public class Insert extends AbstractDbIterator {
+
+    private TransactionId transactionId;
+    private DbIterator childDbIterator;
+    private int tableId;
+
+    private boolean alreadyInserted;
 
     /**
      * Constructor.
@@ -16,24 +22,34 @@ public class Insert extends AbstractDbIterator {
      */
     public Insert(TransactionId t, DbIterator child, int tableid)
         throws DbException {
-        // some code goes here
+        this.transactionId = t;
+        this.childDbIterator = child;
+        this.tableId = tableid;
+
+        this.alreadyInserted = false;
+
+        TupleDesc childTupleDesc = this.childDbIterator.getTupleDesc();
+        TupleDesc tableTupleDesc = Database.getCatalog().getTupleDesc(this.tableId);
+
+        if (!childTupleDesc.equals(tableTupleDesc)) {
+            throw new DbException("Tuple descriptor of child differs from table " + String.valueOf(this.tableId));
+        }
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return new TupleDesc(new Type[]{Type.INT_TYPE});
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.childDbIterator.open();
     }
 
     public void close() {
-        // some code goes here
+        this.childDbIterator.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.childDbIterator.rewind();
     }
 
     /**
@@ -49,9 +65,30 @@ public class Insert extends AbstractDbIterator {
      * @see Database#getBufferPool
      * @see BufferPool#insertTuple
      */
-    protected Tuple readNext()
-            throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+    protected Tuple readNext() throws TransactionAbortedException, DbException {
+        if (this.alreadyInserted) {
+            return null;
+        }
+
+        int numInsertedRecords = 0;
+
+        while (this.childDbIterator.hasNext()) {
+            Tuple insertableTuple = this.childDbIterator.next();
+
+            try {
+                Database.getBufferPool()
+                    .insertTuple(this.transactionId, this.tableId, insertableTuple);
+                numInsertedRecords++;
+            } catch (IOException e) {
+                throw new DbException("Cannot insert tuple " + insertableTuple.toString() + " into the table " + String.valueOf(this.tableId) + ".");
+            }
+        }
+
+        Tuple result = new Tuple(new TupleDesc(new Type[]{Type.INT_TYPE}));
+        result.setField(0, new IntField(numInsertedRecords));
+
+        this.alreadyInserted = true;
+
+        return result;
     }
 }
