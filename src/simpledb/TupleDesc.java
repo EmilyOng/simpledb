@@ -95,8 +95,14 @@ public class TupleDesc {
      * @throws NoSuchElementException if no field with a matching name is found.
      */
     public int nameToId(String name) throws NoSuchElementException {
+        if (name == null) {
+            throw new NoSuchElementException("No field matching " + name + ".");
+        }
+
         for (int i = 0; i < this.fields.length; i++) {
-            if (this.fields[i] != null && this.fields[i].equals(name)) {
+            int tablePrefix = name.indexOf(".");
+            String fieldName = tablePrefix == -1 ? name : name.substring(tablePrefix + 1);
+            if (this.fields[i] != null && this.fields[i].equals(fieldName)) {
                 return i;
             }
         }
@@ -177,7 +183,14 @@ public class TupleDesc {
      */
     public String toString() {
         return IntStream.range(0, this.numFields())
-            .mapToObj(idx -> this.types[idx].toString() + "(" + this.fields[idx] + ")")
+            .mapToObj(idx -> {
+                String descriptor = this.types[idx].toString() + "(" + this.fields[idx] + ")";
+                if (idx < this.numFields() - 1) {
+                    return descriptor + ", ";
+                } else {
+                    return descriptor;
+                }
+            })
             .reduce("", (result, field) -> result + field);
     }
 }

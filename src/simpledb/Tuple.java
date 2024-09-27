@@ -116,7 +116,6 @@ public class Tuple {
                 tupleString += "\t";
             }
         }
-        tupleString += "\n";
         return tupleString;
     }
 }
