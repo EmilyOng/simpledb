@@ -2,12 +2,13 @@ package simpledb;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.Map.Entry;
 /**
  * BufferPool manages the reading and writing of pages into memory from
  * disk. Access methods call into it to retrieve pages, and it fetches
  * pages from the appropriate location.
  * <p>
- * The BufferPool is also responsible for locking;  when a transaction fetches
+ * The BufferPool is also responsible for locking; when a transaction fetches
  * a page, BufferPool which check that the transaction has the appropriate
  * locks to read/write the page.
  */
@@ -61,12 +62,11 @@ public class BufferPool {
         Page page = dbFile.readPage(pid);
 
         if (this.pageIdToPage.size() == this.maxNumPages) {
-            // TODO: Include eviction policy.
-            throw new DbException("Buffer pool is full.");
-        } else {
-            this.pageIdToPage.put(pid, page);
-            return page;
+            this.evictPage();
         }
+        
+        this.pageIdToPage.put(pid, page);
+        return page;
     }
 
     /**
@@ -151,7 +151,7 @@ public class BufferPool {
      */
     public void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, TransactionAbortedException {
-            HeapFile heapFile = (HeapFile) Database
+        HeapFile heapFile = (HeapFile) Database
             .getCatalog()
             .getDbFile(t.getRecordId().getPageId().getTableId());
         
@@ -165,8 +165,9 @@ public class BufferPool {
      */
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
-        // not necessary for lab1
-
+        for (PageId pageId : this.pageIdToPage.keySet()) {
+            this.flushPage(pageId);
+        }
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -184,8 +185,18 @@ public class BufferPool {
      * @param pid an ID indicating the page to flush
      */
     private synchronized void flushPage(PageId pid) throws IOException {
-        // some code goes here
-        // not necessary for lab1
+        Page page = this.pageIdToPage.get(pid);
+        if (page == null) {
+            return;
+        }
+
+        if (page.isDirty() == null) {
+            return;
+        }
+
+        HeapFile heapFile = (HeapFile) Database.getCatalog().getDbFile(pid.getTableId());
+        heapFile.writePage(page);
+        page.markDirty(false, null);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -200,8 +211,23 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        for (Entry<PageId, Page> entry : this.pageIdToPage.entrySet()) {
+            PageId pageId = entry.getKey();
+            Page page = entry.getValue();
+
+            if (page.isDirty() == null) {
+                try {
+                    this.flushPage(pageId);
+                    this.pageIdToPage.remove(pageId);
+
+                    return;
+                } catch (IOException e) {
+                    throw new DbException("Cannot flush page " + pageId.toString() + " to the disk.");
+                }
+            }
+        }
+
+        throw new DbException("Cannot evict any pages from the buffer pool.");
     }
 
 }
